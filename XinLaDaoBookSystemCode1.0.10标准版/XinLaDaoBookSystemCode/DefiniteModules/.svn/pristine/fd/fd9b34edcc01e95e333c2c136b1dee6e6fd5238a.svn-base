@@ -1,0 +1,50 @@
+//
+//  ComboCell.m
+//  BookSystem
+//
+//  Created by chensen on 13-12-18.
+//
+//
+
+#import "ComboCell.h"
+
+@implementation ComboCell
+@synthesize lblCame=_lblCame,lblPrice=_lblPrice,lblUnit=_lblUnit,lblCount=_lblCount,btn=_btn,lblcui=_lblcui;
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        // Initialization code
+        _lblCame=[[UILabel alloc] init];
+        _lblCame.textAlignment=NSTextAlignmentCenter;
+        _lblCame.frame=CGRectMake(768/7, 0, 768/7, 60);
+        [self.contentView addSubview:_lblCame];
+        _lblCount=[[UILabel alloc] init];
+        _lblCount.textAlignment=NSTextAlignmentCenter;
+        _lblCount.frame=CGRectMake(768/7*2, 0, 768/7, 60);
+        [self.contentView addSubview:_lblCount];
+        _lblPrice=[[UILabel alloc] init];
+        _lblPrice.textAlignment=NSTextAlignmentCenter;
+        _lblPrice.frame=CGRectMake(768/7*3, 0, 768/7, 60);
+        [self.contentView addSubview:_lblPrice];
+        _lblUnit=[[UILabel alloc] init];
+        _lblUnit.textAlignment=NSTextAlignmentCenter;
+        _lblUnit.frame=CGRectMake(768/7*4, 0, 768/7, 60);
+        [self.contentView addSubview:_lblUnit];
+        _lblUnit=[[UILabel alloc] init];
+        _lblUnit.textAlignment=NSTextAlignmentCenter;
+        _lblUnit.frame=CGRectMake(768/7*5, 0, 768/7, 60);
+        [self.contentView addSubview:_lblUnit];
+    }
+    return self;
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+{
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

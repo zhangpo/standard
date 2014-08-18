@@ -1,0 +1,65 @@
+//
+//  AKDataProvider.m
+//  BookSystem
+//
+//  Created by chensen on 13-11-25.
+//
+//
+
+#import "AKDataProvider.h"
+#import "FMDatabase.h"
+#import "BSDataProvider.h"
+
+@implementation AKDataProvider
++(NSArray *)getClassById{
+    NSString *path = [BSDataProvider sqlitePath];
+    NSLog(@"%@",path);
+    FMDatabase *db = [[FMDatabase alloc]initWithPath:path];
+    if(![db open])
+    {
+        [db release];
+        NSLog(@"打开失败");
+        return nil;
+    }
+    NSMutableArray *array=[NSMutableArray array];
+    NSString *str=[NSString stringWithFormat:@"select * from class order by GRP asc"];
+    NSLog(@"%@",str);
+    FMResultSet *rs = [db executeQuery:str];
+    NSLog(@"%@",rs);
+    while ([rs next]){
+        NSString *str1=[rs stringForColumn:@"DES"];
+        NSLog(@"aaa%@",str1);
+        [array addObject:str1];
+    }
+    [db close];
+    [db release];
+    return array;
+}
+//+(NSMutableArray *)selectFood:(int)tag{
+//    NSString *path = [BSDataProvider sqlitePath];
+//    FMDatabase *db = [[FMDatabase alloc]initWithPath:path];
+//    if(![db open])
+//    {
+//        [db release];
+//        return nil;
+//    }
+//    NSMutableArray *array=[[NSMutableArray alloc] init];
+//    NSString *str=[NSString stringWithFormat:@"select * from food where CLASS=%d and GRPTYP=%d",tag,tag];
+//    FMResultSet *rs = [db executeQuery:str];
+//    NSLog(@"rs=%@",rs);
+//    while ([rs next]){
+//        AKFood *article = [[AKFood alloc]init];
+//        article.name =[rs stringForColumn:@"DES"];
+//        NSLog(@"name%@",article.name);
+//        //name=_name,itcode=_itcode,item=_item,price=_price,unit=_unit;
+//        article.itcode=[rs stringForColumn:@"ITCODE"];
+//        article.item=[rs stringForColumn:@"ITEM"];
+//        article.price=[[rs stringForColumn:@"price"] intValue];
+//        article.unit=[rs stringForColumn:@"UNIT"];
+//        [array addObject:article];
+//        [article release];
+//    }
+//    [db close];
+//    return array;
+//}
+@end

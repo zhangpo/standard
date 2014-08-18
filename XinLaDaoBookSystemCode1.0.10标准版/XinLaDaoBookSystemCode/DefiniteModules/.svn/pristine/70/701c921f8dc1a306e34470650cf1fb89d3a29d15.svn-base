@@ -1,0 +1,615 @@
+//
+//  AKLogInViewController.m
+//  BookSystem
+//
+//  Created by chensen on 13-11-6.
+//
+//
+
+#import "AKLogInViewController.h"
+#import "AKDeskMainViewController.h"
+#import "AKSettingUpViewController.h"
+#import "AKOrderRepastViewController.h"
+#import "BSDataProvider.h"
+#import "BSTableViewController.h"
+#import "Singleton.h"
+#import "BSSettingViewController.h"
+#import "AKsCanDanListClass.h"
+#import "AKOrderLeft.h"
+#import "MMDrawerController.h"
+#import "MMDrawerVisualState.h"
+#import "MMExampleDrawerVisualStateManager.h"
+#import "PaymentSelect.h"
+@interface AKLogInViewController ()
+{
+    UILabel *lb;
+    UIButton *btn1;
+    UIButton *btn2;
+}
+@end
+
+@implementation AKLogInViewController
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+        logInRequest = [[AKCurrentRequest alloc]init];
+        logInRequest.delegate = self;
+    }
+    return self;
+}
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    self.navigationController.navigationBarHidden = YES;
+    if ([[Singleton sharedSingleton].userInfo objectForKey:@"user"]==nil) {
+        lb.text=@"";
+        
+        btn1.frame=CGRectMake(337, 500, 60, 30);
+        btn2.frame=CGRectMake(444, 500, 0, 0);
+    }
+    else
+    {
+        lb.text=[NSString stringWithFormat:@"用户名:%@",[[Singleton sharedSingleton].userInfo objectForKey:@"user"]];
+        btn1.frame=CGRectMake(337, 500, 60,30);
+        btn2.frame=CGRectMake(444, 500, 60, 30);
+    }
+}
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+	// Do any additional setup after loading the view.
+    HUD = [[MBProgressHUD alloc] initWithView:self.view];
+    //如果设置此属性则当前的view置于后台
+    HUD.dimBackground=YES;
+    HUD.delegate=self;
+    [HUD show:YES];
+    HUD.labelText=@"数据请求中...";
+    [self.rememberBut setImage:[UIImage imageNamed:@"select_yes.png"] forState:UIControlStateSelected];
+    self.textField2.secureTextEntry = YES;
+    [self acquireUserData];
+    //    [UIFont fontWithName:@"ArialRoundedMTBold"size:20];
+    
+    
+    btn1=[UIButton buttonWithType:UIButtonTypeCustom];
+    [btn1 setBackgroundImage:[UIImage imageNamed:@"TableButtonBlue.png"] forState:UIControlStateNormal];
+    [btn1 addTarget:self action:@selector(logIn:) forControlEvents:UIControlEventTouchUpInside];
+    [btn1 setTitle:@"登录" forState:UIControlStateNormal];
+    
+    //    [self.view addSubview:btn1];
+    
+    btn2=[UIButton buttonWithType:UIButtonTypeCustom];
+    [btn2 setBackgroundImage:[UIImage imageNamed:@"TableButtonBlue.png"] forState:UIControlStateNormal];
+    [btn2 setTitle:@"注销" forState:UIControlStateNormal];
+    [btn2 addTarget:self action:@selector(logOut:) forControlEvents:UIControlEventTouchUpInside];
+    //    [self.view addSubview:btn2];
+    lb=[[UILabel alloc] initWithFrame:CGRectMake(0, 10, 700, 30)];
+    lb.textAlignment=NSTextAlignmentRight;
+    [self.view addSubview:lb];
+    lb.backgroundColor=[UIColor clearColor];
+    
+    _keyboardView = [[ZenKeyboardView alloc] initWithFrame:CGRectMake(135, 1024-650, 490, 400)];
+    _keyboardView.delegate = self;
+    self.textField1.delegate=self;
+    self.textField2.delegate=self;
+    self.textField1.frame=CGRectMake(300, 270, 250, 40);
+    self.textField1.font=[UIFont fontWithName:@"ArialRoundedMTBold"size:20];
+    self.textField2.frame=CGRectMake(300, 325, 250, 40);
+    [self.textField1 becomeFirstResponder];
+    [self.view addSubview:_keyboardView];
+    //    if(1)
+    //    {
+    //        [self isupdata];
+    //    }
+    //    else
+    //    {
+    //        [self isupdataFanKui];
+    //    }
+}
+- (void)didNumericKeyPressed:(UIButton *)button
+{
+    if([button.titleLabel.text isEqualToString:@"完成"])
+    {
+        if ([self.textField1 isFirstResponder])
+        {
+            [self.textField2 becomeFirstResponder];
+        }
+        else
+        {
+            [self.textField1 becomeFirstResponder];
+        }
+    }
+    else if ([button.titleLabel.text isEqualToString:@"删除"])
+    {
+        [self didBackspaceKeyPressed];
+    }
+    else
+    {
+        if ([self.textField1 isFirstResponder])
+        {
+            self.textField1.text = [NSString stringWithFormat:@"%@%@", self.textField1.text, button.titleLabel.text];
+        }else
+        {
+            self.textField2.text = [NSString stringWithFormat:@"%@%@", self.textField2.text, button.titleLabel.text];
+        }
+    }
+    
+}
+
+- (void)didBackspaceKeyPressed {
+    if ([self.textField1 isFirstResponder]) {
+        NSInteger length = self.textField1.text.length;
+        if (length == 0) {
+            self.textField1.text = @"";
+            return;
+        }
+        NSString *substring = [self.textField1.text substringWithRange:NSMakeRange(0, length - 1)];
+        self.textField1.text = substring;
+    }else
+    {
+        NSInteger length = self.textField2.text.length;
+        if (length == 0) {
+            self.textField2.text = @"";
+            return;
+        }
+        NSString *substring = [self.textField2.text substringWithRange:NSMakeRange(0, length - 1)];
+        self.textField2.text = substring;
+    }
+    
+}
+-(void)zenKeychongzhiDelegate
+{
+    self.textField1.text=@"";
+    self.textField2.text=@"";
+    [self.textField1 becomeFirstResponder];
+}
+-(void)zenKeydengluDelegate
+{
+    [self logIn:nil];
+}
+
+//md5加密
+- (NSString *)md5HexDigest:(NSString*)password
+{
+    const char *original_str = [password UTF8String];
+    unsigned char result[CC_MD5_DIGEST_LENGTH];
+    CC_MD5(original_str, strlen(original_str), result);
+    NSMutableString *hash = [NSMutableString string];
+    for (int i = 0; i < 16; i++)
+    {
+        [hash appendFormat:@"%02X", result[i]];
+    }
+    NSString *mdfiveString = [hash lowercaseString];
+    NSLog(@"Encryption Result = %@",mdfiveString);
+    return mdfiveString;
+}
+
+
+//程序升级
+-(void)isupdata
+{
+    NSString *dianPuNum = [[NSUserDefaults standardUserDefaults] objectForKey:@"DianPuId"];
+    //    NSString *banbenNum=[[NSUserDefaults standardUserDefaults]objectForKey:@"versionNum"];
+    //    if(!banbenNum)
+    //    {
+    NSDictionary* infoDict =[[NSBundle mainBundle] infoDictionary];
+    NSString* versionNum =[infoDict objectForKey:@"CFBundleVersion"];
+    [[NSUserDefaults standardUserDefaults]setObject:versionNum forKey:@"versionNum"];
+    //    }
+    
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    //设定时间格式,这里可以设置成自己需要的格式
+    [dateFormatter setDateFormat:@"yyyy"];
+    //用[NSDate date]可以获取系统当前时间
+    NSString *yy = [dateFormatter stringFromDate:[NSDate date]];
+    [dateFormatter setDateFormat:@"MM"];
+    //用[NSDate date]可以获取系统当前时间
+    NSString *MM = [dateFormatter stringFromDate:[NSDate date]];
+    
+    NSString *xmlstr=[NSString stringWithFormat:@"choicesoft%@%@",yy,MM];
+    NSString *md5XmlStr=[self md5HexDigest:xmlstr];
+    
+    AKsNetAccessClass *netAccess= [AKsNetAccessClass sharedNetAccess];
+    netAccess.delegate=self;
+    
+    NSDictionary *dict=[[NSDictionary alloc]initWithObjectsAndKeys:md5XmlStr,@"xmlStr",dianPuNum,@"scode",versionNum,@"version", nil];
+    [netAccess getRequestFromWebService:[NSString stringWithFormat:@"%@",[AKURLString getMainURLWithKey:@"IsHHTUpgradeWebService"]] andPost:dict andTag:IsHHTUpgradeWebService];
+    
+}
+
+-(void)HHTIsHHTUpgradeWebServiceSuccessFormWebService:(NSDictionary *)dict
+{
+    NSLog(@"%@",dict);
+}
+
+//升级成功反馈信息
+-(void)isupdataFanKui
+{
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    //设定时间格式,这里可以设置成自己需要的格式
+    [dateFormatter setDateFormat:@"yyyy"];
+    //用[NSDate date]可以获取系统当前时间
+    NSString *yy = [dateFormatter stringFromDate:[NSDate date]];
+    [dateFormatter setDateFormat:@"MM"];
+    //用[NSDate date]可以获取系统当前时间
+    NSString *MM = [dateFormatter stringFromDate:[NSDate date]];
+    
+    NSString *xmlstr=[NSString stringWithFormat:@"choicesoft%@%@",yy,MM];
+    NSString *md5XmlStr=[self md5HexDigest:xmlstr];
+    
+    AKsNetAccessClass *netAccess= [AKsNetAccessClass sharedNetAccess];
+    netAccess.delegate=self;
+    
+    NSDictionary *dict=[[NSDictionary alloc]initWithObjectsAndKeys:md5XmlStr,@"xmlStr",@"",@"version",@"",@"ip",@"",@"oldVersion", nil];
+    [netAccess getRequestFromWebService:[NSString stringWithFormat:@"%@",[AKURLString getMainURLWithKey:@"HHTUpgradeVersion"]] andPost:dict andTag:HHTUpgradeVersion];
+}
+
+-(void)HHTUpgradeVersionSuccessFormWebService:(NSDictionary *)dict
+{
+    NSLog(@"%@",dict);
+}
+
+//链接失败
+-(void)failedFromWebServie
+{
+    UIAlertView*alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                  message:@"网络连接失败，请检查网络！\n然后重新支付"
+                                                 delegate:self
+                                        cancelButtonTitle:@"确定"
+                                        otherButtonTitles:nil];
+    alert.tag=100007;
+    [alert show];
+    
+    //    [self showAlterDelegate:@"网络连接失败，请检查网络！"];
+}
+
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+-(void)acquireUserData//获得用户资料
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];//储存信息用的
+    NSDictionary *userDic = [defaults objectForKey:@"UserInfo"];
+    if ([userDic objectForKey:@"name"]&&[userDic objectForKey:@"password"])
+    {
+        self.textField1.text = [userDic objectForKey:@"name"];
+        self.textField2.text = [userDic objectForKey:@"password"];
+        self.rememberBut.selected = YES;
+    }
+}
+- (void)storeUserData//储存账号资料
+{
+    NSDictionary *userData = [NSDictionary dictionaryWithObjectsAndKeys:self.textField1.text,@"name",self.textField2.text,@"password", nil];
+    [[NSUserDefaults standardUserDefaults] setObject:userData forKey:@"UserInfo"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+- (void)removeUserData//不记住账号时删除储存资料
+{
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"UserInfo"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+- (IBAction)remember:(id)sender {
+    UIButton *but = (UIButton*)sender;
+    if (but.selected) {
+        but.selected = NO;
+    }else{
+        but.selected = YES;
+    }
+}
+- (IBAction)logIn:(UIButton *)sender {
+    //    [self AKOrder];
+    [self.view addSubview:HUD];
+    NSLog(@"%@",[self.view subviews]);
+    if (self.rememberBut.selected == NO) {
+        [self removeUserData];
+    }else
+    {
+        [self storeUserData];
+    }
+    if (self.textField1.text.length&&self.textField2.text.length) {
+        
+        NSLog(@"执行2");
+        NSDictionary *requestDic = [NSDictionary dictionaryWithObjectsAndKeys:self.textField1.text,@"userCode",self.textField2.text,@"usePass", nil];
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            // 耗时的操作
+            NSDictionary *dict=[self loginRequest:requestDic];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                // 更新界面
+                if (dict) {
+                    [HUD removeFromSuperview];
+                    NSString *result = [[dict objectForKey:@"ns:return"] objectForKey:@"text"];
+                    NSLog(@"%@",result);
+                    NSArray *ary = [result componentsSeparatedByString:@"@"];
+                    if ([ary count]==1) {
+                        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                                       message:[ary lastObject]
+                                                                      delegate:nil
+                                                             cancelButtonTitle:@"确定"
+                                                             otherButtonTitles:nil];
+                        [alert show];
+                        
+                    }
+                    else
+                    {
+                        NSLog(@"%@",ary);
+                        NSString *content=[ary objectAtIndex:1];
+                        NSString *str=[ary objectAtIndex:0];
+                        if ([str isEqualToString:@"0"]) {
+                            NSMutableDictionary *dict=[[NSMutableDictionary alloc] init];
+                            [dict setObject:self.textField1.text forKey:@"user"];
+                            [dict setObject:self.textField2.text forKey:@"password"];
+                            [AKsNetAccessClass sharedNetAccess].UserPass=self.textField1.text;
+                            [Singleton sharedSingleton].userInfo=dict;
+                            [AKsNetAccessClass sharedNetAccess].baoliuXiaoshu=[ary objectAtIndex:3];
+                            [Singleton sharedSingleton].Time=[ary objectAtIndex:1];
+                            [AKsNetAccessClass sharedNetAccess].dataVersion=[ary objectAtIndex:4];
+                            [Singleton sharedSingleton].userName=[ary objectAtIndex:6];
+                            NSDictionary *BanBen=[[NSDictionary alloc]initWithObjectsAndKeys:[ary objectAtIndex:4],@"POS",[ary objectAtIndex:5],@"HHT", nil];
+                            [[NSUserDefaults standardUserDefaults]setObject:BanBen forKey:@"BanBen"];
+                            [[NSUserDefaults standardUserDefaults]synchronize];
+                            if([ary objectAtIndex:4] && [ary objectAtIndex:5])
+                            {
+                                if([[ary objectAtIndex:4]isEqualToString:[ary objectAtIndex:5]])
+                                {
+                                    AKDeskMainViewController *deskMainViewController = [[AKDeskMainViewController alloc]initWithNibName:nil bundle:nil];
+                                    [self.navigationController pushViewController:deskMainViewController animated:YES];
+                                }
+                                else
+                                {
+                                    bs_dispatch_sync_on_main_thread(^{
+                                        
+                                        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                                                       message:@"数据版本已更新，是否FTP同步数据"
+                                                                                      delegate:self
+                                                                             cancelButtonTitle:@"否"
+                                                                             otherButtonTitles:@"是",nil];
+                                        alert.tag=4;
+                                        [alert show];
+                                    });
+                                }
+                            }
+                            
+                        }
+                        else
+                        {
+                            [HUD removeFromSuperview];
+                            NSLog(@"%@",content);
+                            if (content==nil) {
+                                content=@"网络连接超时,请重试";
+                            }
+                            UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                                           message:content
+                                                                          delegate:nil
+                                                                 cancelButtonTitle:@"确定"
+                                                                 otherButtonTitles:nil];
+                            [alert show];
+                            
+                            
+                        }
+                    }
+                }
+                else
+                {
+                    [HUD removeFromSuperview];
+                    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                                   message:@"网络连接超时,请检验设备的IP地址是否设置正确"
+                                                                  delegate:nil
+                                                         cancelButtonTitle:@"确定"
+                                                         otherButtonTitles:nil];
+                    [alert show];
+                    
+                }
+                
+                
+            });
+        });
+        //        NSString *UrlStr = [AKURLString getMainURLWithKey:@"pLoginUser"];
+        //            NSLog(@"%@",UrlStr);
+        
+        //        [NSThread detachNewThreadSelector:@selector(loginRequest:) toTarget:self withObject:requestDic];
+        //        NSThread* myThread = [[NSThread alloc] initWithTarget:self
+        //                                                     selector:@selector(loginRequest:)
+        //                                                       object:requestDic];
+        //        [myThread start];
+        //        NSInvocationOperation *operation = [[NSInvocationOperation alloc]initWithTarget:self
+        //                                                                               selector:@selector(loginRequest:)
+        //                                                                                 object:requestDic];
+        //
+        //        NSOperationQueue *queue = [[NSOperationQueue alloc]init];
+        //        [queue addOperation:operation];
+        //        [self loginRequest:requestDic];
+        
+    }else{
+        [HUD removeFromSuperview];
+        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                       message:@"请输入完整的“员工编号”和“密码”！"
+                                                      delegate:nil
+                                             cancelButtonTitle:@"确定"
+                                             otherButtonTitles:nil];
+        [alert show];
+        
+    }
+    
+}
+-(NSDictionary *)loginRequest:(NSDictionary *)requestDic
+{
+    BSDataProvider *dp=[[BSDataProvider alloc] init];
+    NSDictionary *dict=[dp pLoginUser:requestDic];
+    return dict;
+}
+- (IBAction)settingUp:(UIButton *)sender//设置
+{
+    UIAlertView *alertView = [[UIAlertView alloc]initWithTitle:@"密码" message:@"请输入密码" delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"确定",nil];
+    alertView.alertViewStyle = UIAlertViewStyleSecureTextInput;
+    alertView.tag=3;
+    [alertView show];
+}
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
+    if(alertView.tag==4)
+    {
+        if(buttonIndex==1)
+        {
+            BSSettingViewController *vcSetting = [[BSSettingViewController alloc] initWithType:BSSettingTypeUpdate];
+            [self.navigationController pushViewController:vcSetting animated:YES];
+        }
+    }
+    //    else if (alertView.tag==5)
+    //    {
+    //        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"http://115.238.164.148:8070/ChoiceIpad/ChoiceApp.html"]];
+    //        exit(0);
+    //    }
+    else if (alertView.tag==3) {
+        if (buttonIndex==1) {
+            NSDate *datenow = [NSDate date];//现在时间,你可以输出来看下是什么格式
+            NSTimeZone *zone = [NSTimeZone timeZoneWithName:@"Asia/Beijing"];               NSInteger interval = [zone secondsFromGMTForDate:datenow]+60*60*24*3;
+            NSDate *localeDate = [datenow  dateByAddingTimeInterval: interval];
+            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+            //设定时间格式,这里可以设置成自己需要的格式
+            [dateFormatter setDateFormat:@"yy"];
+            //用[NSDate date]可以获取系统当前时间
+            NSString *yy = [dateFormatter stringFromDate:localeDate];
+            [dateFormatter setDateFormat:@"MM"];
+            //用[NSDate date]可以获取系统当前时间
+            NSString *MM = [dateFormatter stringFromDate:localeDate];
+            [dateFormatter setDateFormat:@"dd"];
+            //用[NSDate date]可以获取系统当前时间
+            NSString *dd = [dateFormatter stringFromDate:localeDate];
+            NSString *str=[NSString stringWithFormat:@"%@%@%@",dd,MM,yy];
+            UITextField *tf1 = [alertView textFieldAtIndex:0];
+            if ([tf1.text isEqualToString:str]) {
+                AKSettingUpViewController *settingUpViewController = [[AKSettingUpViewController alloc]initWithNibName:nil bundle:nil];
+                UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:settingUpViewController];
+                nav.modalPresentationStyle = UIModalPresentationFormSheet;
+                [self presentModalViewController:nav animated:YES];
+            }
+            else
+            {
+                UIAlertView *alert=[[UIAlertView alloc] initWithTitle:@"提示" message:@"密码错误，请重试" delegate:self cancelButtonTitle:@"确认" otherButtonTitles: nil];
+                [alert show];
+            }
+            
+        }
+    }
+    
+}
+//注销
+- (IBAction)logOut:(UIButton *)sender {
+    
+    self.textField1.text=@"";
+    self.textField2.text=@"";
+    [self.view addSubview:HUD];
+    btn1.frame=CGRectMake(337, 500, 60, 30);
+    btn2.frame=CGRectMake(444, 500, 0, 0);
+    lb.text=@"";
+    [Singleton sharedSingleton].userInfo=nil;
+    NSThread* myThread = [[NSThread alloc] initWithTarget:self
+                                                 selector:@selector(logoutRequest)
+                                                   object:nil];
+    [myThread start];
+}
+
+-(void)AKOrder
+{
+    //    UIViewController * leftSideDrawerViewController = [[AKOrderLeft alloc] init];
+    //
+    //    UIViewController * centerViewController = [[AKOrderRepastViewController alloc] init];
+    //
+    //    //    UIViewController * rightSideDrawerViewController = [[RightViewController alloc] init];
+    //
+    //    MMDrawerController *drawerController=[[MMDrawerController alloc] initWithCenterViewController:centerViewController leftDrawerViewController:leftSideDrawerViewController];
+    //    [drawerController setMaximumRightDrawerWidth:280.0];
+    //    [drawerController setOpenDrawerGestureModeMask:MMOpenDrawerGestureModeAll];
+    //    [drawerController setCloseDrawerGestureModeMask:MMCloseDrawerGestureModeAll];
+    //
+    //    [drawerController
+    //     setDrawerVisualStateBlock:^(MMDrawerController *drawerController, MMDrawerSide drawerSide, CGFloat percentVisible) {
+    //         MMDrawerControllerDrawerVisualStateBlock block;
+    //         block = [[MMExampleDrawerVisualStateManager sharedManager]
+    //                  drawerVisualStateBlockForDrawerSide:drawerSide];
+    //         if(block){
+    //             block(drawerController, drawerSide, percentVisible);
+    //         }
+    //     }];
+    AKOrderRepastViewController *akorede=[[AKOrderRepastViewController alloc] init];
+    [self.navigationController pushViewController:akorede animated:YES];
+    
+}
+
+- (void)viewDidUnload {
+    [self setTextField1:nil];
+    [self setTextField2:nil];
+    [self setRememberBut:nil];
+    [super viewDidUnload];
+}
+#pragma - 代理实现
+-(void)refreshSucceedWithContentDictionary:(NSDictionary *)aContentDic
+{
+    //    NSLog(@"%@",aContentDic);
+    NSDictionary *aDic = [AKDisposeAchievedData logInDisposeWithDictionary:aContentDic];
+    //    NSLog(@"%@",aDic);
+    if ([[aDic objectForKey:@"Result"]boolValue]) {//成功
+        
+        if (self.rememberBut.selected) {
+            //[self storeUserData:[aDic objectForKey:@"Message"]];
+        }else{
+            [self removeUserData];
+        }
+        AKUserData *userData = [AKUserData sharedUserData];
+        userData.userAccount = self.textField1.text;
+        userData.userPassword = self.textField2.text;
+        userData.userName = [aDic objectForKey:@"Message"];
+        NSLog(@"执行");
+        AKDeskMainViewController *deskMainViewController = [[AKDeskMainViewController alloc]initWithNibName:nil bundle:nil];
+        [self.navigationController pushViewController:deskMainViewController animated:YES];
+        
+    }else{
+        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                       message:@"请输入正确的的“ID号”、“账号”和“密码”！"
+                                                      delegate:nil
+                                             cancelButtonTitle:@"确定"
+                                             otherButtonTitles:nil];
+        [alert show];
+    }
+    
+}
+-(void)refreshFailWithParameter//参数问题 请求失败
+{
+    UIAlertView*alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                  message:@"请输入正确的的“ID号”、“账号”和“密码”！"
+                                                 delegate:nil
+                                        cancelButtonTitle:@"确定"
+                                        otherButtonTitles:nil];
+    [alert show];
+}
+-(void)refreshFailWithInternet//网络问题 请求失败
+{
+    UIAlertView*alert = [[UIAlertView alloc]initWithTitle:@"提示"
+                                                  message:@"网络连接失败，请检查网络！"
+                                                 delegate:nil
+                                        cancelButtonTitle:@"确定"
+                                        otherButtonTitles:nil];
+    [alert show];
+}
+-(BOOL)textFieldShouldBeginEditing:(UITextField *)textField
+{
+    textField.inputView=[[UIView alloc]initWithFrame:CGRectZero];
+    return YES;
+}
+//-(BOOL)textFieldShouldBeginEditing:(UITextField *)textField
+//{
+//    [[NSNotificationCenter defaultCenter] addObserver:self
+//                                             selector:@selector(keyboardWillShow:)
+//                                                 name:UIKeyboardWillShowNotification object:nil];
+//    return YES;
+//}
+- (void)keyboardWillShow:(NSNotification *)Notification{
+    UIWindow* tempWindow = [[[UIApplication sharedApplication] windows] objectAtIndex:1];
+    [tempWindow setAlpha:0];
+}
+@end

@@ -1,0 +1,14 @@
+//
+//  ComboCell.h
+//  BookSystem
+//
+//  Created by chensen on 13-12-18.
+//
+//
+
+#import <UIKit/UIKit.h>
+
+@interface ComboCell : UITableViewCell
+@property(nonatomic,strong)UIButton *btn;
+@property(nonatomic,strong)UILabel *lblCame,*lblCount,*lblPrice,*lblUnit,*lblcui;
+@end

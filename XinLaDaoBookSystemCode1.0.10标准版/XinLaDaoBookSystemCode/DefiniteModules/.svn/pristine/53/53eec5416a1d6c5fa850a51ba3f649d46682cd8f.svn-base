@@ -1,0 +1,15 @@
+//
+//  AKDataProvider.h
+//  BookSystem
+//
+//  Created by chensen on 13-11-25.
+//
+//
+
+#import <Foundation/Foundation.h>
+#import "ASIHTTPRequest.h"
+
+@interface AKDataProvider : NSObject<ASIHTTPRequestDelegate>
++(NSArray *)getClassById;
++(NSMutableArray *)selectFood:(int)tag;
+@end
